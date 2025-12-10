@@ -7,6 +7,7 @@ use App\Http\Requests\TestimonialRequest;
 use App\Http\Resources\TestimonialResource;
 use App\Models\Testimonial;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class TestimonialController extends Controller
 {
@@ -15,9 +16,11 @@ class TestimonialController extends Controller
      */
     public function index()
     {
-        $testimonials = Testimonial::orderByDesc('is_featured')
-            ->orderByDesc('created_at')
-            ->get();
+        $testimonials = Cache::remember('testimonials.public', 300, function () {
+            return Testimonial::orderByDesc('is_featured')
+                ->orderByDesc('created_at')
+                ->get();
+        });
 
         return TestimonialResource::collection($testimonials);
     }
@@ -28,6 +31,7 @@ class TestimonialController extends Controller
     public function store(TestimonialRequest $request)
     {
         $testimonial = Testimonial::create($request->validated());
+        Cache::forget('testimonials.public');
 
         return new TestimonialResource($testimonial);
     }
@@ -49,6 +53,7 @@ class TestimonialController extends Controller
     {
         $testimonial = Testimonial::findOrFail($id);
         $testimonial->update($request->validated());
+        Cache::forget('testimonials.public');
 
         return new TestimonialResource($testimonial);
     }
@@ -60,6 +65,7 @@ class TestimonialController extends Controller
     {
         $testimonial = Testimonial::findOrFail($id);
         $testimonial->delete();
+        Cache::forget('testimonials.public');
 
         return response()->noContent();
     }

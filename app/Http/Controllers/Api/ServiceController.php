@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
@@ -15,9 +16,11 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        $services = Service::where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $services = Cache::remember('services.active', 300, function () {
+            return Service::where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        });
 
         return ServiceResource::collection($services);
     }
@@ -31,6 +34,7 @@ class ServiceController extends Controller
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
 
         $service = Service::create($data);
+        Cache::forget('services.active');
 
         return new ServiceResource($service);
     }
@@ -52,6 +56,7 @@ class ServiceController extends Controller
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
 
         $service->update($data);
+        Cache::forget('services.active');
 
         return new ServiceResource($service);
     }
@@ -62,6 +67,7 @@ class ServiceController extends Controller
     public function destroy(Service $service)
     {
         $service->delete();
+        Cache::forget('services.active');
 
         return response()->noContent();
     }

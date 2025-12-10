@@ -7,6 +7,7 @@ use App\Http\Requests\FaqRequest;
 use App\Http\Resources\FaqResource;
 use App\Models\Faq;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class FaqController extends Controller
 {
@@ -15,9 +16,11 @@ class FaqController extends Controller
      */
     public function index()
     {
-        $faqs = Faq::where('is_active', true)
-            ->orderBy('order')
-            ->get();
+        $faqs = Cache::remember('faqs.public', 300, function () {
+            return Faq::where('is_active', true)
+                ->orderBy('order')
+                ->get();
+        });
 
         return FaqResource::collection($faqs);
     }
@@ -28,6 +31,7 @@ class FaqController extends Controller
     public function store(FaqRequest $request)
     {
         $faq = Faq::create($request->validated());
+        Cache::forget('faqs.public');
 
         return new FaqResource($faq);
     }
@@ -49,6 +53,7 @@ class FaqController extends Controller
     {
         $faq = Faq::findOrFail($id);
         $faq->update($request->validated());
+        Cache::forget('faqs.public');
 
         return new FaqResource($faq);
     }
@@ -60,6 +65,7 @@ class FaqController extends Controller
     {
         $faq = Faq::findOrFail($id);
         $faq->delete();
+        Cache::forget('faqs.public');
 
         return response()->noContent();
     }

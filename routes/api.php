@@ -35,9 +35,7 @@ Route::get('posts/{slug}', [PostController::class, 'show']);
 
 Route::get('testimonials', [TestimonialController::class, 'index']);
 Route::get('faqs', [FaqController::class, 'index']);
-
-    Route::post('contact', [LeadController::class, 'store']);
-    Route::post('leads/{id}/convert-order', [LeadController::class, 'convertToOrder']);
+Route::post('contact', [LeadController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
@@ -45,7 +43,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('client/projects', [ProjectController::class, 'clientProjects']);
 
-    Route::middleware('role:admin')->group(function () {
+    Route::post('leads/{id}/convert-order', [LeadController::class, 'convertToOrder'])
+        ->middleware('role:admin,superadmin');
+
+    Route::middleware('role:admin,superadmin')->group(function () {
         Route::apiResource('services', ServiceController::class)
             ->except(['index', 'show'])
             ->scoped(['service' => 'slug']);
